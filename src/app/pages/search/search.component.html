@@ -1,0 +1,277 @@
+<div class="min-h-screen bg-gray-50 flex flex-col">
+  <!-- 頂部導航欄 -->
+  <header class="bg-blue-600 text-white shadow-md">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">智能產品搜尋系統</h1>
+      
+      <div class="flex items-center space-x-4">
+        @if (username) {
+          <span class="text-sm">
+            歡迎, {{ username }}
+          </span>
+        }
+        <button 
+          (click)="logout()" 
+          class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded text-sm transition-colors">
+          登出
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 搜尋區塊 -->
+  <section class="bg-gradient-to-b from-blue-600 to-blue-500 py-16 px-4">
+    <div class="container mx-auto max-w-3xl">
+      <h2 class="text-white text-center text-3xl font-bold mb-8">
+        輸入產品類型或具體需求以獲取智能產品比較
+      </h2>
+      
+      <div class="flex w-full">
+        <input 
+          [formControl]="searchControl"
+          (keyup.enter)="onSearch()"
+          type="text" 
+          placeholder="例如: 入門級單眼相機、適合遊戲的筆記型電腦、4K高清電視..." 
+          class="flex-grow px-4 py-3 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-gray-800"
+        />
+        <button 
+          (click)="onSearch()" 
+          [disabled]="isLoading"
+          class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-3 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center transition-colors"
+        >
+          @if (isLoading) {
+            <span class="mr-2">
+              <div class="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+            </span>
+            搜尋中...
+          } @else {
+            搜尋
+          }
+        </button>
+      </div>
+      
+      <p class="text-blue-100 mt-4 text-center text-sm">
+        使用 RAG 技術提供更準確的產品比較和推薦
+      </p>
+    </div>
+  </section>
+
+  <!-- 搜尋結果區塊 -->
+  <main class="container mx-auto px-4 py-8 flex-grow">
+    <!-- 錯誤訊息 - 使用新的 @if 語法 -->
+    @if (error) {
+      <div class="max-w-4xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        {{ error }}
+      </div>
+    }
+
+    <!-- 搜尋結果 - 使用延遲載入視圖來優化性能 -->
+    @defer (when searchResults && !isLoading) {
+      <div class="max-w-5xl mx-auto fade-in">
+        
+        <!-- 最佳選擇區塊 -->
+        <section class="mb-10">
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">最佳選擇摘要</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- 最佳整體選擇 -->
+            <div class="bg-white rounded-lg shadow-md p-5 border-t-4 border-blue-500">
+              <div class="text-sm font-medium text-blue-600 mb-2">最佳整體選擇</div>
+              <div class="font-bold text-lg text-gray-800">{{ searchResults!.comparison_results.best_choice }}</div>
+            </div>
+            
+            <!-- 最佳性價比 -->
+            <div class="bg-white rounded-lg shadow-md p-5 border-t-4 border-green-500">
+              <div class="text-sm font-medium text-green-600 mb-2">最佳性價比</div>
+              <div class="font-bold text-lg text-gray-800">{{ searchResults!.comparison_results.best_value }}</div>
+            </div>
+            
+            <!-- 最佳品質 -->
+            <div class="bg-white rounded-lg shadow-md p-5 border-t-4 border-purple-500">
+              <div class="text-sm font-medium text-purple-600 mb-2">最佳品質</div>
+              <div class="font-bold text-lg text-gray-800">{{ searchResults!.comparison_results.best_quality }}</div>
+            </div>
+            
+            <!-- 功能最多 -->
+            <div class="bg-white rounded-lg shadow-md p-5 border-t-4 border-yellow-500">
+              <div class="text-sm font-medium text-yellow-600 mb-2">功能最多</div>
+              <div class="font-bold text-lg text-gray-800">{{ searchResults!.comparison_results.most_features }}</div>
+            </div>
+          </div>
+          
+          <!-- 總體分析 -->
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="font-bold text-lg text-gray-800 mb-3">總體分析</h3>
+            <p class="text-gray-700 whitespace-pre-line">{{ searchResults!.analysis }}</p>
+          </div>
+        </section>
+        
+        <!-- 產品比較區塊 -->
+        <section class="mb-10">
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">產品詳細比較</h2>
+          
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <!-- 產品列表 - 使用新的 @for 語法 -->
+            @for (product of searchResults!.product_comparisons; track product.product_name; let i = $index; let isLast = $last) {
+              <div class="p-6">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                  <div>
+                    <h3 class="text-xl font-bold text-gray-800">{{ product.product_name }}</h3>
+                    <div class="text-gray-600 mt-1">{{ product.brand }}</div>
+                  </div>
+                  <div class="mt-2 md:mt-0">
+                    <div class="text-lg font-bold text-blue-600">{{ product.price }}</div>
+                    <div class="flex items-center mt-1">
+                      <div class="text-lg font-semibold" [ngClass]="getRatingColor(product.rating)">{{ product.rating.toFixed(1) }}</div>
+                      <div class="ml-2 text-sm text-gray-500">/ 10 分</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 產品特點 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <!-- 優點 -->
+                  <div>
+                    <h4 class="font-semibold text-green-700 mb-2">優點:</h4>
+                    <ul class="space-y-1">
+                      @for (pro of product.pros; track pro) {
+                        <li class="flex items-start">
+                          <span class="text-green-500 mr-2">✓</span>
+                          <span>{{ pro }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                  
+                  <!-- 缺點 -->
+                  <div>
+                    <h4 class="font-semibold text-red-700 mb-2">缺點:</h4>
+                    <ul class="space-y-1">
+                      @for (con of product.cons; track con) {
+                        <li class="flex items-start">
+                          <span class="text-red-500 mr-2">✗</span>
+                          <span>{{ con }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+                
+                <!-- 關鍵特性與適用場景 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <!-- 關鍵特性 -->
+                  <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">關鍵特性:</h4>
+                    <div class="flex flex-wrap gap-2">
+                      @for (feature of product.key_features; track feature) {
+                        <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          {{ feature }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                  
+                  <!-- 適用場景 -->
+                  <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">適用場景:</h4>
+                    <div class="flex flex-wrap gap-2">
+                      @for (scenario of product.suitable_scenarios; track scenario) {
+                        <span class="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm">
+                          {{ scenario }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 分隔線 -->
+              @if (!isLast) {
+                <div class="border-t border-gray-200"></div>
+              }
+            } @empty {
+              <div class="p-6 text-center text-gray-500">
+                沒有找到可比較的產品
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+    } @loading {
+      <!-- 搜尋結果加載時的內容，使用 @loading 顯示 -->
+      <div class="max-w-4xl mx-auto text-center py-16">
+        <div class="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin mx-auto mb-6"></div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">分析產品數據中...</h2>
+        <p class="text-gray-600">
+          我們的 RAG 系統正在分析最佳產品並進行比較
+        </p>
+      </div>
+    } @error {
+      <!-- 搜尋結果加載失敗時的內容，使用 @error 顯示 -->
+      <div class="max-w-4xl mx-auto text-center py-16">
+        <div class="text-6xl mb-4">❌</div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">無法載入結果</h2>
+        <p class="text-gray-600 mb-6">
+          搜尋過程發生錯誤，請稍後再試
+        </p>
+        <button 
+          (click)="onSearch()" 
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-300">
+          重試
+        </button>
+      </div>
+    }
+
+    <!-- 初始狀態提示 - 使用新的 @if 語法 -->
+    @if (!hasSearched && !isLoading) {
+      <div class="max-w-4xl mx-auto text-center py-12">
+        <div class="text-8xl mb-6">🔍</div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">探索智能產品比較</h2>
+        <p class="text-gray-600 mb-6">
+          輸入您感興趣的產品類型或需求，我們的 RAG 系統將為您分析市場上的最佳選擇，並提供詳細的產品比較。
+        </p>
+        <div class="text-sm text-gray-500">
+          例如: "高階遊戲耳機"、"預算3萬以內的筆電"、"適合初學者的攝影機"...
+        </div>
+      </div>
+    }
+    
+    <!-- 加載中狀態 - 使用在搜索初始加載時，而非 Deferrable Views 的加載狀態 -->
+    @if (isLoading && !searchResults) {
+      <div class="max-w-4xl mx-auto text-center py-16">
+        <div class="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin mx-auto mb-6"></div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">正在尋找最佳產品比較...</h2>
+        <p class="text-gray-600">
+          我們的 RAG 系統正在分析產品資料，這可能需要幾秒鐘。
+        </p>
+      </div>
+    }
+  </main>
+
+  <!-- 頁腳 - 使用 Deferrable Views 延遲載入非關鍵內容 -->
+  @defer {
+    <footer class="bg-gray-800 text-white py-8">
+      <div class="container mx-auto px-4 text-center">
+        <p class="text-gray-400 text-sm">
+          本系統使用 RAG (Retrieval Augmented Generation) 技術增強搜尋結果的相關性和準確性
+        </p>
+        <p class="mt-4 text-gray-500 text-xs">
+          © 2025 智能產品搜尋系統. 僅作為展示用途。
+        </p>
+        <div class="mt-4 flex justify-center space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white">隱私政策</a>
+          <a href="#" class="text-gray-400 hover:text-white">使用條款</a>
+          <a href="#" class="text-gray-400 hover:text-white">常見問題</a>
+          <a href="#" class="text-gray-400 hover:text-white">聯絡我們</a>
+        </div>
+      </div>
+    </footer>
+  } @placeholder {
+    <!-- 頁腳延遲載入時的簡易預設內容 -->
+    <footer class="bg-gray-800 text-white py-8">
+      <div class="container mx-auto px-4 text-center">
+        <p class="text-gray-400 text-sm">© 2025 智能產品搜尋系統</p>
+      </div>
+    </footer>
+  }
+</div>

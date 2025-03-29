@@ -1,0 +1,15 @@
+/* 登入頁特定的額外樣式 */
+
+/* 這裡是自訂的動畫效果，將在表單提交時使用 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}

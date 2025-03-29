@@ -1,1 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
+/* Tailwind CSS 指令 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局樣式 */
+html, body { 
+  height: 100%; 
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* 自定義工具類 */
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6;
+  }
+  
+  .card-title {
+    @apply text-xl font-bold mb-4;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 text-white px-4 py-2 rounded hover:bg-primary-600 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition-colors;
+  }
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
