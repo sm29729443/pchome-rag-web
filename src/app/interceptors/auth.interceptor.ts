@@ -1,42 +1,55 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { 
+  HttpHandlerFn, 
+  HttpInterceptorFn, 
+  HttpRequest, 
+  HttpErrorResponse 
+} from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
 import { catchError, throwError } from 'rxjs';
 import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+export const authInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>, 
+  next: HttpHandlerFn
+) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   
-  // 檢查 token URL 請求是否已經有授權標頭
-  if (req.url.includes('/token') || req.headers.has('Authorization')) {
-    return next(req);
-  }
-  
-  // 從 Auth 服務獲取令牌
+  // 從 AuthService 獲取 token
   const token = authService.getToken();
   
+  // 如果有 token，添加到請求頭
   if (token) {
-    // 克隆請求並添加授權標頭
-    const authReq = req.clone({
+    req = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
       }
     });
-    
-    // 送出修改後的請求
-    return next(authReq).pipe(
-      catchError(error => {
-        // 處理 401 (未授權) 錯誤
-        if (error.status === 401) {
-          authService.logout();
-          router.navigate(['/login']);
-        }
-        return throwError(() => error);
-      })
-    );
   }
   
-  // 如果沒有令牌，直接傳遞原始請求
-  return next(req);
+  // 處理請求
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // 處理 401 未授權錯誤
+      if (error.status === 401) {
+        // 如果是未登入造成的 401 錯誤
+        if (router.url !== '/login') {
+          // 存儲目前的 URL，以便登入後能夠返回
+          localStorage.setItem('redirectUrl', router.url);
+          
+          // 跳轉到登入頁面
+          router.navigate(['/login'], { 
+            queryParams: { 
+              unauthorized: 'true',
+              redirectUrl: router.url 
+            }
+          });
+        }
+      }
+      
+      // 將錯誤傳遞給訂閱者
+      return throwError(() => error);
+    })
+  );
 };

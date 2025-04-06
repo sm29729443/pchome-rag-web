@@ -9,6 +9,12 @@ export const routes: Routes = [
     path: 'login', 
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
   },
+
+  // 註冊頁面
+  {
+    path: 'register',
+    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
+  },
   
   // 搜尋頁面 (移除了 AuthGuard，不再需要身份驗證)
   { 

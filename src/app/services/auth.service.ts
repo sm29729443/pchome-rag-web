@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
@@ -12,10 +12,20 @@ export interface LoginRequest {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-  user: {
-    username: string;
-    email: string;
-  };
+}
+
+export interface UserInfo {
+  id: number;
+  user_name: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RegisterRequest {
+  user_name: string;
+  email: string;
+  password: string;
 }
 
 @Injectable({
@@ -42,10 +52,21 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/token`, formData).pipe(
       tap(response => {
         this.setToken(response.access_token);
-        this.setUser(response.user);
+        // 儲存用戶資訊
+        const userInfo = {
+          username: username
+        };
+        this.setUser(userInfo);
         this.isAuthenticatedSubject.next(true);
       })
     );
+  }
+
+  register(user_name: string, email: string, password: string): Observable<UserInfo> {
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
+    const body: RegisterRequest = { user_name, email, password };
+    
+    return this.http.post<UserInfo>(`${this.apiUrl}/register`, body, { headers });
   }
 
   logout(): void {
